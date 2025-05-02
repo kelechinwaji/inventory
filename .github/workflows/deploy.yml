@@ -17,11 +17,13 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Railway CLI (New)
+      - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Authenticate with Railway
-        run: railway login --token ${{ secrets.INVENTORY_TOKEN }}
+      - name: Debug Deployment
+        run: echo "Deploying to Railway..."
 
       - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.INVENTORY_TOKEN }}
         run: railway up
