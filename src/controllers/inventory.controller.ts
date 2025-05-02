@@ -40,7 +40,7 @@ export class InventoryController {
       return res.status(200).json({});
     }
   );
-
+//
   public getInventoryQuantity = asyncErrorHandler(
     async (req: Request, res: Response) => {
       const { item } = req.params;
