@@ -64,4 +64,44 @@ describe("InventoryService", () => {
     expect(prisma.inventory.delete).toHaveBeenCalledTimes(1);
     expect(prisma.inventory.update).toHaveBeenCalledTimes(1);
   });
+
+  it("should properly handle multiple sequential sell calls (FIFO)", async () => {
+    const now = new Date();
+    const future1 = new Date(now.getTime() + 10 * 1000);
+    const future2 = new Date(now.getTime() + 20 * 1000);
+
+    // Initial lots: 5 from lot 1, 10 from lot 2
+    prisma.inventory.findMany
+      .mockResolvedValueOnce([
+        { id: "1", quantity: 5, expiry: future1 },
+        { id: "2", quantity: 10, expiry: future2 },
+      ]) // First sell: 7 units
+      .mockResolvedValueOnce([
+        { id: "2", quantity: 8, expiry: future2 }, // After lot 1 deleted, lot 2 reduced
+      ]); // Second sell: 8 units
+
+    prisma.inventory.delete.mockResolvedValue({});
+    prisma.inventory.update.mockResolvedValue({});
+
+    // First call - should sell 5 from lot 1 (deleted), 2 from lot 2 (updated)
+    await service.sellItem("foo", 7);
+
+    expect(prisma.inventory.delete).toHaveBeenCalledWith({
+      where: { id: "1" },
+    });
+    expect(prisma.inventory.update).toHaveBeenCalledWith({
+      where: { id: "2" },
+      data: { quantity: 8 },
+    });
+
+    jest.clearAllMocks(); // Reset mocks before next test step
+
+    // Second call - sell remaining 8
+    await service.sellItem("foo", 8);
+
+    // All from lot 2 should be sold now
+    expect(prisma.inventory.delete).toHaveBeenCalledWith({
+      where: { id: "2" },
+    });
+  });
 });

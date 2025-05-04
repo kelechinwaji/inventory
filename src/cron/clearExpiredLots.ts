@@ -17,7 +17,7 @@ export async function cleanExpiredLots() {
 }
 
 export function scheduleClearExpiredLots() {
-  cron.schedule("*/5 * * * *", async () => {
+  cron.schedule("*/10 * * * *", async () => {
     logger.info("[Cleaner] Running scheduled task...");
     await cleanExpiredLots();
   });
